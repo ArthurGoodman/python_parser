@@ -1,4 +1,9 @@
-class BinaryNode:
+"""."""
+
+import readline
+
+
+class _BinaryNode:
 
     def __init__(self, left, oper, right):
         self.oper = oper
@@ -6,13 +11,13 @@ class BinaryNode:
         self.right = right
 
     def eval(self, context):
-        return {
-            "|": self.left.eval(context) or self.right.eval(context),
-            "&": self.left.eval(context) and self.right.eval(context),
-        }.get(self.oper, None)
+        if self.oper == "|":
+            return self.left.eval(context) or self.right.eval(context)
+        elif self.oper == "&":
+            return self.left.eval(context) and self.right.eval(context)
 
 
-class ValueNode:
+class _ValueNode:
 
     def __init__(self, value):
         self.value = value
@@ -21,7 +26,7 @@ class ValueNode:
         return self.value
 
 
-class VariableNode:
+class _VariableNode:
 
     def __init__(self, name):
         self.name = name
@@ -33,7 +38,7 @@ class VariableNode:
         return context[self.name]
 
 
-class AssignmentNode:
+class _AssignmentNode:
 
     def __init__(self, name, value):
         self.name = name
@@ -45,7 +50,7 @@ class AssignmentNode:
         return value
 
 
-class Parser:
+class _Parser:
 
     def __init__(self):
         self.context = {}
@@ -74,7 +79,7 @@ class Parser:
                 self.t_text += self.expr[self.pos]
                 self.pos += 1
 
-            if len(self.t_text) == 1:
+            if len(self.t_text) == 1 and self.t_text.islower():
                 self.t_id = "v"
             elif self.t_text == "true":
                 self.t_id = "t"
@@ -99,10 +104,10 @@ class Parser:
         node = self.logic_or()
 
         if self.accept("="):
-            if not(isinstance(node, VariableNode)):
+            if not isinstance(node, _VariableNode):
                 raise RuntimeError("invalid assignment")
 
-            node = AssignmentNode(node.name, self.logic_or())
+            node = _AssignmentNode(node.name, self.logic_or())
 
         return node
 
@@ -110,7 +115,7 @@ class Parser:
         node = self.logic_and()
 
         while self.accept("|"):
-            node = BinaryNode(node, "|", self.logic_and())
+            node = _BinaryNode(node, "|", self.logic_and())
 
         return node
 
@@ -118,7 +123,7 @@ class Parser:
         node = self.term()
 
         while self.accept("&"):
-            node = BinaryNode(node, "&", self.term())
+            node = _BinaryNode(node, "&", self.term())
 
         return node
 
@@ -126,12 +131,12 @@ class Parser:
         node = None
 
         if self.check("v"):
-            node = VariableNode(self.t_text)
+            node = _VariableNode(self.t_text)
             self.get_token()
         elif self.accept("t"):
-            node = ValueNode(True)
+            node = _ValueNode(True)
         elif self.accept("f"):
-            node = ValueNode(False)
+            node = _ValueNode(False)
         elif self.accept("("):
             node = self.logic_or()
             if not self.accept(")"):
@@ -157,13 +162,27 @@ class Parser:
             if not self.check("e"):
                 raise RuntimeError("there's an excess part of expression")
 
+            print("[correct expression]")
+
             return node.eval(self.context)
         except RuntimeError as e:
             print("error: " + str(e))
 
 
-def main():
-    parser = Parser()
-    print(parser.eval("true or (false and true)"))
+def _main():
+    parser = _Parser()
 
-main()
+    while True:
+        line = raw_input("$ ")
+
+        if line == "exit":
+            return
+        else:
+            result = parser.eval(line)
+
+            if result is not None:
+                print(result)
+
+        print("")
+
+_main()
