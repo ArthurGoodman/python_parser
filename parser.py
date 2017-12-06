@@ -1,9 +1,7 @@
-"""."""
-
 import readline
 
 
-class _BinaryNode:
+class BinaryNode:
 
     def __init__(self, left, oper, right):
         self.oper = oper
@@ -17,7 +15,7 @@ class _BinaryNode:
             return self.left.eval(context) and self.right.eval(context)
 
 
-class _ValueNode:
+class ValueNode:
 
     def __init__(self, value):
         self.value = value
@@ -26,7 +24,7 @@ class _ValueNode:
         return self.value
 
 
-class _VariableNode:
+class VariableNode:
 
     def __init__(self, name):
         self.name = name
@@ -50,7 +48,7 @@ class _AssignmentNode:
         return value
 
 
-class _Parser:
+class Parser:
 
     def __init__(self):
         self.context = {}
@@ -101,39 +99,32 @@ class _Parser:
                 self.t_id = "u"
 
     def assign(self):
-        node = self.logic_or()
+        node = self.binary()
 
         if self.accept("="):
-            if not isinstance(node, _VariableNode):
+            if not isinstance(node, VariableNode):
                 raise RuntimeError("invalid assignment")
 
-            node = _AssignmentNode(node.name, self.logic_or())
+            node = _AssignmentNode(node.name, self.binary())
 
         return node
 
-    def logic_or(self):
-        par = False
-
+    def binary(self):
         if (self.accept('(')):
-            par = True
+            node = self.binary()
 
-        node = self.logic_and(par)
-
-        if par:
-            while self.accept("|"):
-                node = _BinaryNode(node, "|", self.logic_and(par))
+            if self.accept("|"):
+                node = BinaryNode(node, "|", self.binary())
+            elif self.accept("&"):
+                node = BinaryNode(node, "&", self.binary())
+            else:
+                raise RuntimeError(
+                    "binary operator expected inside parentheses")
 
             if not self.accept(')'):
                 raise RuntimeError("unmatched parentheses")
-
-        return node
-
-    def logic_and(self, par):
-        node = self.term()
-
-        if par:
-            while self.accept("&"):
-                node = _BinaryNode(node, "&", self.term())
+        else:
+            node = self.term()
 
         return node
 
@@ -141,16 +132,12 @@ class _Parser:
         node = None
 
         if self.check("v"):
-            node = _VariableNode(self.t_text)
+            node = VariableNode(self.t_text)
             self.get_token()
         elif self.accept("t"):
-            node = _ValueNode(True)
+            node = ValueNode(True)
         elif self.accept("f"):
-            node = _ValueNode(False)
-        elif self.accept("("):
-            node = self.logic_or()
-            if not self.accept(")"):
-                raise RuntimeError("unmatched parentheses")
+            node = ValueNode(False)
         elif self.check("u"):
             raise RuntimeError("unknown token '" + self.t_text + "'")
         elif self.check("e"):
@@ -179,8 +166,8 @@ class _Parser:
             print("error: " + str(e))
 
 
-def _main():
-    parser = _Parser()
+def main():
+    parser = Parser()
 
     while True:
         line = raw_input("$ ")
@@ -195,4 +182,4 @@ def _main():
 
         print("")
 
-_main()
+main()
