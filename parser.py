@@ -112,18 +112,28 @@ class _Parser:
         return node
 
     def logic_or(self):
-        node = self.logic_and()
+        par = False
 
-        while self.accept("|"):
-            node = _BinaryNode(node, "|", self.logic_and())
+        if (self.accept('(')):
+            par = True
+
+        node = self.logic_and(par)
+
+        if par:
+            while self.accept("|"):
+                node = _BinaryNode(node, "|", self.logic_and(par))
+
+            if not self.accept(')'):
+                raise RuntimeError("unmatched parentheses")
 
         return node
 
-    def logic_and(self):
+    def logic_and(self, par):
         node = self.term()
 
-        while self.accept("&"):
-            node = _BinaryNode(node, "&", self.term())
+        if par:
+            while self.accept("&"):
+                node = _BinaryNode(node, "&", self.term())
 
         return node
 
